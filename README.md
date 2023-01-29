@@ -55,4 +55,28 @@
     * 최초 한번은 호출해야 데이터 조회가능
     * true 면 이동 결과 데이터가 있다는 의미
     * false 면 더이상 커서가 가리키는 데이터가 없다는 의미
-    * 
+
+* DB Connection
+  * 어플리케이션 로직에서 DB 드라이버를 통해 커넥션 조회
+  * DB 드라이버와 DB 는 TCP/IP 커넥션 연결
+  * 연결 후 ID/PW 와 기타 부가정보 DB 에 전달
+  * ID/PW 인증 후 인증 후 DB 세션 생성
+  * DB 커넥션 생성 완료 응답
+  * DB 드라이버는 커넥션 객체를 생성해서 클라이언트에 반환
+* Connection Pool 을 사용하면
+  * 미리 커넥션 생성 후 사용 (보통 10개)
+  * 요청시 커넥션 풀중 하나를 할당
+  * 커넥션 사용후 종료가 아닌 반환 => 재사용
+  * 서버당 최대 커넥션 수를 제한하여 DB 보호도 가능
+  * hikariCP 를 Connection pool 로 사용
+* javax.sql.DataSource 인터페이스로 커넥션 획득하는 방법 추상화
+  * DBCP2 / HikariCP 커넥션 풀 등 원하는 구현체로 갈아끼울 수 있음
+  * DataManager는 DataSource 를 사용하지않아 DriverManagerDataSource 클래스를 사용
+    * DriverManager 는 Connection 획득할떄마다 파라미터 전달해야함
+    * DataSource 는 객체 생성시에 파라미터 선언 후 커넥션 획득할떄는 호출만 일어남 => 설정과 사용의 분리
+  * 애플리케이션 로직은 DataSource 인터페이스에만 의존
+  * 별도의 쓰레드를 사용해 애플리케이션 성능에 영향 주는것을 줄인다.
+* DataManger 보다는 DataSource 를 사용하자.
+  * 애플리케이션 코드 변경 없이 DriverManagerDataSource -> HikariDataSource 가능
+  * 즉, 애플리케이션 코드는 DataSource 인터페이스만 의존 (DI + OCP)
+
