@@ -29,33 +29,7 @@
     * SQL 작성을 하지않아 개발 생산성이 높아짐
     * 편리하지만 깊이가 필요함
 
-## Code
-* External Libraries 에 설치된 라이브러리 및 버전 정보 존재
-* h2 사용시 jdbc:h2:~/test 로 처음에 접속하여  
-  ~/test.mv.db 파일 생성 확인하고  
-  jdbc:h2:tcp://localhost/~/test 로 접속
-
-* 아래 명령어로 테이블 생성
-```
-     drop table member if exists cascade;
-     create table member (
-         member_id varchar(10),
-         money integer not null default 0,
-         primary key (member_id)
-     );
-    insert into member(member_id, money) values ('hi1',10000);
-```
-* Connection: 데이터베이스 커넥션 획득
-* PrepareStatement: 파라미터가 있는 SQL 구문을 실행하는 역할
-  * executeUpdate(): 데이터 변경시 사용 => 영향 받은 row 수 return
-  * executeQuery(): 데이터 조회시 사용 / 결과를 ResultSet 으로 반환 
-* ResultSet: 조회 결과가 순서대로 들어감
-  * ResultSet 내부의 cursor 를 이동해 다음 데이터 조회 가능
-  * rs.next() 를 호출해 커서를 다음으로 이동
-    * 최초 한번은 호출해야 데이터 조회가능
-    * true 면 이동 결과 데이터가 있다는 의미
-    * false 면 더이상 커서가 가리키는 데이터가 없다는 의미
-
+### Connection
 * DB Connection
   * 어플리케이션 로직에서 DB 드라이버를 통해 커넥션 조회
   * DB 드라이버와 DB 는 TCP/IP 커넥션 연결
@@ -79,4 +53,93 @@
 * DataManger 보다는 DataSource 를 사용하자.
   * 애플리케이션 코드 변경 없이 DriverManagerDataSource -> HikariDataSource 가능
   * 즉, 애플리케이션 코드는 DataSource 인터페이스만 의존 (DI + OCP)
+
+#### 트랜잭션
+* 하나의 거래를 안전하게 처리하도록 보장해주는것
+  * 모든 작업이 성공해서 데이터베이스에 정상 반영하는것을 커밋(Commit)
+  * 작업 중 하나라도 실패해서 거래 이전으로 되돌리는 것을 롤백(Rollback)
+* ACID 보장
+  * Atomicity(원자성)
+    * 트랜잭션 내 실행 작업들은 하나의 작업처럼 모두 성공하거나 실패해야한다.
+    * 실패해도 하나의 작업을 되돌리는것처럼 처리(롤백)
+    * 오토 커밋모드여서 쿼리 하나 실행 마다 커밋되면 실패시 심각한문제 => 수동 커밋모드로 전환 = 트랜잭션 시작
+    * 서로 다른 세션이 같은 데이터를 수정하면 트랜잭션의 원자성이 꺠짐 => 락
+  * Consistency(일관성)
+    * 일관성 있는 데이터베이스 상태를 유지할것. 무결성 제약조건을 항상 만족할것
+  * Isolation(격리성)
+    * 동시에 실행되는 트랜잭션들이 서로 영향을 미치지않게 격리
+    * 동시에 데이터를 수정하지 못하도록해야함
+    * 동시성과 관련된 성능이슈로 격리수준 선택가능(isolation level)
+  * Durability(지속성)
+    * 트랜잭션 끝나면 그 결과가 항상 기록되어야 함
+    * 중간에 문제가 생겨도 데이터베이스 로그등을 사용하여 내용을 복구
+* Isolation level 
+  * READ UNCOMMITED(커밋되지 않은 읽기)
+  * READ COMMITTED(커밋된 읽기)
+  * REPEATABLE READ(반복 가능한 읽기)
+  * SERIALIZABLE(직렬화 가능)
+* 데이터 베이스 연결구조
+  * 사용자 가 클라이언트를 사용해서 데이터베이스 서버에 접근 -> 서버는 내부에 세션 생성 -> 세션이 SQL 실행
+  -> 세션이 트랜잭션 시작 후 종료 -> 이후 새로운 트랜잭션 시작 가능 -> 사용자가 커넥션 닫거나 DBA가 세션 강제 종료시 세션 종료
+  * 커넥션 풀이 10개의 커넥션을 생성 -> 세션 10개 생성
+* 커밋호출전까지는 임시로 데이터 저장
+* 조회시에는 보통 Lock을 사용하지 않고 데이터를 조회 가능
+  * 조회시에도 Lock 을 획득하고 싶다면 'select ~ for update' 구문 사용 => 변경 불가
+
+## Code
+* External Libraries 에 설치된 라이브러리 및 버전 정보 존재
+* h2 사용시 jdbc:h2:~/test 로 처음에 접속하여  
+  ~/test.mv.db 파일 생성 확인하고  
+  jdbc:h2:tcp://localhost/~/test 로 접속
+
+* 아래 명령어로 테이블 생성
+  * 해당 테이블과 의존성 관계가 있는 모든 객체들도 함께 삭제
+```sql
+     drop table member if exists cascade;
+     create table member (
+         member_id varchar(10),
+         money integer not null default 0,
+         primary key (member_id)
+     );
+    insert into member(member_id, money) values ('hi1',10000);
+```
+* Connection: 데이터베이스 커넥션 획득
+* PrepareStatement: 파라미터가 있는 SQL 구문을 실행하는 역할
+  * executeUpdate(): 데이터 변경시 사용 => 영향 받은 row 수 return
+  * executeQuery(): 데이터 조회시 사용 / 결과를 ResultSet 으로 반환 
+* ResultSet: 조회 결과가 순서대로 들어감
+  * ResultSet 내부의 cursor 를 이동해 다음 데이터 조회 가능
+  * rs.next() 를 호출해 커서를 다음으로 이동
+    * 최초 한번은 호출해야 데이터 조회가능
+    * true 면 이동 결과 데이터가 있다는 의미
+    * false 면 더이상 커서가 가리키는 데이터가 없다는 의미
+
+* 자동 커밋 모드 설정
+```sql
+    set autocommit true;
+    insert into member(member_id, money) values ('data1', 10000);
+    insert into member(member_id, money) values ('data2', 10000);
+```
+* 수동 커밋 모드 설정
+```sql
+    set autocommit false;
+    insert into member(member_id, money) values ('data3', 10000);
+    insert into member(member_id, money) values ('data4', 10000);
+    commit;
+```
+* 데이터 초기화
+```sql
+    set autocommit true;
+    delete from member;
+```
+* update
+```sql
+    update member set money=10000 - 2000 where member_id = 'memberA';
+```
+* LOCK 시간 정하기
+```sql
+    set LOCK_TIMEOUT 60000; 
+```
+
+* con.close() 시에 커넥션 풀을 사용하면 커넥션이 종료되는 것이 아니라 풀에 반납됨 => 자동 커밋모드로 변경한 뒤 반납
 
