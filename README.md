@@ -85,6 +85,25 @@
 * 커밋호출전까지는 임시로 데이터 저장
 * 조회시에는 보통 Lock을 사용하지 않고 데이터를 조회 가능
   * 조회시에도 Lock 을 획득하고 싶다면 'select ~ for update' 구문 사용 => 변경 불가
+* 서비스 계층은 특정 기술에 종속되지않게 가급적 비즈니스 로직만 구현해야함
+  * throws SQLException 는 JDBC 기술에 의존 => repository 에서 해결해야 
+* 트랜잭션 추상화
+  * 추상화된 인터페이스에 서비스가 의존
+  * 원하는 구현체를 DI 를 통해 주입
+  * OCP 원칙 (서비스는 인터페이스에 의존하고 DI 사용)
+  * PlatformTransactionManager
+* 스프링은 트랜잭션 동기화 매니저를 제공
+  * ThreadLocal 을 사용해 커넥션을 동기화
+  * ThreadLocal 을 사용하여 멀티쓰레드 상황에서 안전하게 커넥션 동기화
+  * 트랜잭션 동기화 매니저에 보관된 커넥션을 꺼내 사용하여 파라미터로 커넥션을 전달하지 않아도 됨
+* @Transactional 사용
+  * 스프링이 AOP를 사용해서 트랜잭션을 편리하게 처리해줌
+* 선언적 트랜잭션 관리
+  * @Transactional 애노테이션을 적용
+* 프로그래밍 방식 트랜잭션 관리
+* 스프링 부트는 DataSource 를 스프링빈에 자동으로 등록
+  * 이때 application.properties 에 있는 속성으로 DataSource 생성 후 등록
+  * @TestConfiguration 으로 ComponentScan 가능하게 함 (3_4 test)
 
 ## Code
 * External Libraries 에 설치된 라이브러리 및 버전 정보 존재
@@ -142,4 +161,21 @@
 ```
 
 * con.close() 시에 커넥션 풀을 사용하면 커넥션이 종료되는 것이 아니라 풀에 반납됨 => 자동 커밋모드로 변경한 뒤 반납
-
+* DataSourceUtils.getConnection()
+  * 트랜잭션 동기화 매니저가 관리하는 커넥션이 있으면 -> 해당 커넥션을 반환
+  * 트랜잭션 동기화 매니저가 관리하는 커넥션이 없으면 -> 새로운 커넥션을 생성해서 반환
+* DataSourceUtils.releaseConnection()
+  * 커넥션을 바로 닫는게 아님 (트랜잭션을 종료 할때까진 살아있어야함)
+  * 트랜잭션을 사용하기 위해 동기화된 커넥션 -> 커넥션을 닫지않고 그대로 유지
+  * 트랜잭션 동기화 매니저가 관리하는 커넥션이 없으면 -> 커넥션 닫음
+* DataSourceTransactionManager => JDBC
+* JpaTransactionManager => JPA
+* TransactionTemplate 를 스프링이 제공 (템플릭 콜백 패턴)
+* @SpringBootTest: 스프링 AOP 를 적용하려면 스프링 컨테이너가 필요
+  * 테스트시 스프링 부트를 통해 스프링 컨테이너를 생성
+  * 테스트에서 @Autowired 등을 통해 스프링 컨테이너가 관리하는 빈들을 사용 가능
+* @TestConfiguration
+  * 테스트 안에서 내부 설정 클래스를 만들어서 사용하면 스프링 부트가 자동으로 만들어주는 빈들에 추가로 필요한 스프링 빈들을 등록해 테스트 가능
+* SpringCGLIB
+  * AOP 프록시(CGLIB) 적용
+  
