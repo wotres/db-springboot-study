@@ -105,6 +105,26 @@
   * 이때 application.properties 에 있는 속성으로 DataSource 생성 후 등록
   * @TestConfiguration 으로 ComponentScan 가능하게 함 (3_4 test)
 
+### 예외
+* 예외도 객체임
+* Throwable : 최상위 예외
+  * 하위에 Exception / Error(이 예외는 복구 불가능한 시스템 예외라 잡으려 해서는 안됨)
+* Exception
+  * 컴파일러가 체크하는 체크 예외  
+  * 단, RuntimeException 컴파일러가 체크하지 않는 은 언체크 예외
+* 예외는 잡아서 처리하거나 던져야함
+* 예외를 잡거나 던질떄 그 예외의 자식들도 함께 처리됨
+  * ex) Exception 을 catch 로 잡으면 그 하위 예외들도 모두 잡음
+  * ex) Exception 을 throws 로 던지면 그 하위 예외들도 모두 던짐
+* 체크 예외는 throws 예외를 필수로 선언해야함 -> 누락하지 않지만 번거로움
+* 언체크 예외는 예외를 잡지않으면 자동으로 밖으로 던짐 -> 생략가능
+* 기본적으로는 언체크 예외를 사용하고 반드시 잡아야하는 계좌이체 실패 예외 등은 체크 예외로 잡자
+* 체크 예외는 SQLException 같은 리포지토리 부분이 서비스나 컨트롤러에서도 의존되게 되어 OCP/DI 장점이 사라짐
+* 체크 예외의 최상위 타입인 Exception 을 던지게 되면 다른 체크 기능을 놓칠수 있으니 자제
+* Runtime 예외는 놓칠수 있기 떄문에 문서화가 중요
+* 예외 전환시에는 꼭 기존 예외를 포함하자
+
+
 ## Code
 * External Libraries 에 설치된 라이브러리 및 버전 정보 존재
 * h2 사용시 jdbc:h2:~/test 로 처음에 접속하여  
@@ -178,4 +198,7 @@
   * 테스트 안에서 내부 설정 클래스를 만들어서 사용하면 스프링 부트가 자동으로 만들어주는 빈들에 추가로 필요한 스프링 빈들을 등록해 테스트 가능
 * SpringCGLIB
   * AOP 프록시(CGLIB) 적용
-  
+
+* extends Exception 으로 상속받으면 체크 예외가 됨
+* extends RuntimeException 을 상속받으면 언체크 예외가 됨
+* 
